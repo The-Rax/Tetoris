@@ -7,11 +7,15 @@
 
 #define FIELD_H 22  //フィールド縦幅
 #define FIELD_W 12  //フィールド横幅
+#define STOCK_H 4   //ストック縦幅
+#define STOCK_W 5   //ストック横幅
 #define MINO_H 4    //ミノ縦幅
 #define MINO_W 4    //ミノ横幅
 
-char field[FIELD_H][FIELD_W];       //フィールド用
-char displaybuf[FIELD_H][FIELD_W];  //表示用
+char field[FIELD_H][FIELD_W] = {""};                              //フィールド用
+char displaybuf[FIELD_H][FIELD_W + STOCK_W + MINO_W + 1] = {""};  //表示用
+int fieldcolor[FIELD_H][FIELD_W] = {};                          //フィールド色用
+int color[FIELD_H][FIELD_W + STOCK_W + MINO_W + 1] = {};        //表示色用
 
 enum {            //ミノの種類
   MINO_T_I,
@@ -23,7 +27,6 @@ enum {            //ミノの種類
   MINO_T_T,
   MINO_T_MAX
 };
-
 enum {           //角度の種類
   MINO_A_0,
   MINO_A_1,
@@ -252,47 +255,59 @@ char minoS[MINO_T_MAX][MINO_A_MAX][MINO_H][MINO_W] = {   //ミノ
   }
 };
 
-int next [5] = {};  //この後のミノの種類
-int now;            //ミノ更新用の仮場所
-int stock;          //ストック用
+int next[5] = {};  //この後のミノの種類
+int stock;          //ストックミノ
 int isstock = 0;    //ストック中か判定
 int canstock = 1;   //ストック可能か判定
 
 int minoX = 5, minoY = -1;  //操作対象のミノの現在地
 int minoT = 0, minoA = 0;  //操作対象のミノの種類と角度
 
-void display() {  //表示用関数
- memcpy(displaybuf, field, sizeof(field));  
+void change(int* x, int* y){
+  int z = *x;
+  *x = *y;
+  *y = z;
+}
 
-  for (int i = 0; i < MINO_H; i ++)  //ミノによる画面更新
-    for (int j = 0; j < MINO_W; j ++)
-      displaybuf[minoY + i][minoX + j] |= minoS[minoT][minoA][i][j];
-      
-      
+void display() {                         //表示用関数
+  if(isstock)
+    for(int i = 0; i < STOCK_H; i ++){      //ストック更新
+      memcpy(displaybuf[i], minoS[stock][0][i], STOCK_W - 1);
+      for (int j = 0; j < (STOCK_W - 1); j ++){
+        color[i][j] = minoS[stock][0][i][j] * (stock + 1);
+      }
+    }
+
+  for(int i = 0; i < FIELD_H; i ++){     //フィールド更新
+    memcpy(displaybuf[i] + STOCK_W, field[i], FIELD_W);
+    for (int j = 0; j < FIELD_W; j ++){
+        color[i][j + STOCK_W] = fieldcolor[i][j];
+    }
+  }
+
+  for(int i = 0; i < MINO_H * 5; i ++){  //この後のミノ更新
+    memcpy(displaybuf[i] + STOCK_W + FIELD_W + 1, minoS[next[i / MINO_H]][0][i % MINO_H], MINO_W);
+    for (int j = 0; j < MINO_W; j ++){
+        color[i][j + STOCK_W + FIELD_W + 1] = minoS[next[i / MINO_H]][0][i % MINO_H][j] * (next[i / MINO_H] + 1);
+    }
+  }
+  
+  for (int i = 0; i < MINO_H; i ++){  //ミノの位置更新
+    for (int j = 0; j < MINO_W; j ++){
+      displaybuf[minoY + i][minoX + STOCK_W + j] |= minoS[minoT][minoA][i][j];
+      color[minoY + i][minoX + STOCK_W + j] += minoS[minoT][minoA][i][j] * (minoT + 1);
+    }
+  }
+
   system("cls");  //画面リセット
       
+  printf("\x1b[0m");
+  printf("ｓｔｏｃｋ\n");
+
   for (int i = 0; i < FIELD_H; i++){
-    if (i == 0){                       //ストック画面表示
-      printf("ｓｔｏｃｋ");
-    }else if (i < 5 && isstock == 1){
-      for(int j = 0; j < 4; j++){
-        printf(minoS[stock][0][i - 1][j] ? "■" : "　");
-      }
-
-      printf("　");
-    }else{
-      printf("　　　　　");
-    }
-
-    for (int j = 0; j < FIELD_W; j++){ //フィールド表示
-      printf(displaybuf[i][j] ? "■" : "　");
-    }
-
-    if(i < 21){                        //この後のミノ表示
-      printf("　");
-      for (int j = 0; j < MINO_W; j++){
-        printf(minoS[next[i / MINO_H]][0][i % MINO_H][j] ? "■" : "　");
-      }
+    for (int j = 0; j < FIELD_W + STOCK_W + MINO_W + 1; j++){ //フィールド表示
+      printf("\x1b[3%xm", color[i][j]);
+      printf(displaybuf[i][j] ?  "■": "　");
     }
 
     printf("\n");
@@ -309,36 +324,49 @@ bool ishit(int _minoX, int _minoY, int _minoT, int _minoA) {  //あたり判定
   }
 }
 
-void newmino(){  //ミノ生成
+void defomino(){  //ミノ基準値
   minoX = 5; minoY = -1;
-  minoT = rand() % MINO_T_MAX;
   minoA = 0;
 }
+
+int newmino(){    //新ミノ生成
+  return rand() % MINO_T_MAX;
+}
+
+void updatemino(){               //ミノ更新
+  minoT = next[0];               //操作ミノ更新
+  defomino();
+  for (int i = 0; i < 4; i ++){  //この後のミノ更新
+    next[i] = next[i + 1];
+  }
+  next[4] = newmino();
+}
+
 void main (){
-  memset (field, 0, sizeof(field));  //フィールド初期化
-
-  for (int i = 0; i < FIELD_H; i++)  //壁生成
-    field[i][0]  = field[i][FIELD_W - 1] = 1; 
-  for (int i = 0; i < FIELD_W; i ++)
+  for (int i = 0; i < FIELD_H; i++){  //壁生成
+    field[i][0]  = field[i][FIELD_W - 1] = 1;
+    fieldcolor[i][0] = fieldcolor[i][FIELD_W - 1] = 7;
+  }
+  for (int i = 0; i < FIELD_W; i++){
     field[FIELD_H - 1][i] = 1; 
-
-  
-  for (int i = 0; i < 5; i++){       //この後のミノ生成
-  newmino();
-  next[i] = minoT;
+    fieldcolor[FIELD_H - 1][i] = 7;
   }
 
-  newmino();                        //操作対象のミノ生成
+  
+  for (int i = 0; i < 5; i++){      //この後のミノ生成
+    next[i] = newmino();
+  }
+  minoT = newmino();                //操作対象のミノ生成
 
   time_t t = time(NULL);            //時間管理用変数
 
-  while (1) {                       //終了判定
-    if(ishit(minoX, minoY, minoT, minoA)){
+  while (1) {                      
+    if(ishit(minoX, minoY, minoT, minoA)){ //終了判定
       printf("game over\n");
       break;
     }
 
-    if(_kbhit()) {                 //標準入力時の処理
+    if(_kbhit()) {                  //標準入力時の処理
       switch (_getch()){
         case 'w' : while (!ishit(minoX, minoY + 1, minoT, minoA)){minoY++;}; break;  //上
         case 's' : if (!ishit(minoX, minoY + 1, minoT, minoA)){minoY++;}; break;     //下
@@ -353,24 +381,15 @@ void main (){
         case 'h' :                                                                  //ストック
         if (canstock){        //ストック可能か判定
           if (isstock){       //ストック中か判定
-            now = stock;
-            stock = minoT;
-            newmino();
-            minoT = now;
+            change(&stock, &minoT);
+            defomino();
           }else{
             stock = minoT;    //ストックを今のミノで更新
-
-            now = next[0];    //この後のミノ更新
-            for(int i = 0; i < 4; i++){
-              next[i] = next[i + 1];
-            }
-            newmino();
-            next[4] = minoT;
-            minoT = now;
+            updatemino();
 
             isstock = 1;     //ストック中判定に更新
           }
-          canstock = 0;      //1一度ストックしたのでストック不可に更新
+          canstock = 0;      //一度ストックしたのでストック不可に更新
         }
       }
 
@@ -383,6 +402,7 @@ void main (){
         for (int i = 0; i < MINO_H; i ++){
           for (int j = 0; j < MINO_W; j ++){
             field[minoY + i][minoX + j] |= minoS[minoT][minoA][i][j];  //フィールドをミノで更新
+            fieldcolor[minoY + i][minoX + j] += minoS[minoT][minoA][i][j] * (minoT + 1);
           }
         };
 
@@ -393,23 +413,15 @@ void main (){
             line = false;
           }
           if(line){
-           /*  for (int j = 1; j < FIELD_W - 1; j ++)
-            field[i][j] = 0;
-             */
-
-            for(int j = i; 0 <= j; j--)
-            memcpy(field[j], field[j - 1], FIELD_W);  //上のマスをコピー
+            for(int j = i; 0 <= j; j--){
+              memcpy(field[j], field[j - 1], FIELD_W);  //上のマスをコピー
+              memcpy(fieldcolor[j], fieldcolor[j - 1], sizeof(int) * FIELD_W);
+            }
           }
         }
 
-        now = next[0];                //ミノ更新
-        for(int i = 0; i < 4; i++){
-          next[i] = next[i + 1];
-        }
-        newmino();
-        next[4] = minoT;
-        minoT = now;
-        
+        updatemino();
+
         canstock = 1;
       }
       else{
