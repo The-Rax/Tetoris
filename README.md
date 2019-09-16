@@ -20,13 +20,8 @@ l:右回転
 MAC,LINUXはデフォルトで対応していますが、Windowsは8.1より前では対応していないようです。XP以前はC:¥WINDOWS¥System32¥config.ntにdevice=%SystemRoot%¥system32¥ANSI.SYSを追加、8.1以前ではANSICONをダウンロードして有効にすれば遊べます。  
 詳しくは下のリンクに書いてあります。  
 
-ANSICON  
-http://adoxa.altervista.org/ansicon/  
-Windows向けのプログラムでANSIエスケープシーケンスを使うには  
-https://qiita.com/mod_poppo/items/2ff384530c6f3215c635  
-Windows でも ANSI エスケープしたい  
-https://gomiba.co.in/blog/archives/1233  
-WindowsコマンドプロンプトでのANSIエスケープシーケンスの使用  
-https://qiita.com/TsuneoNakanishi/items/a86f52a406b99d202c06  
-エスケープシーケンスによる画面制御  
-https://www.grapecity.com/developer/support/powernews/column/clang/047/page02.htm  
+[ANSICON](http://adoxa.altervista.org/ansicon/)  
+[Windows向けのプログラムでANSIエスケープシーケンスを使うには](https://qiita.com/mod_poppo/items/2ff384530c6f3215c635)  
+[Windows でも ANSI エスケープしたい](https://gomiba.co.in/blog/archives/1233)  
+[WindowsコマンドプロンプトでのANSIエスケープシーケンスの使用](https://qiita.com/TsuneoNakanishi/items/a86f52a406b99d202c06)  
+[エスケープシーケンスによる画面制御](https://www.grapecity.com/developer/support/powernews/column/clang/047/page02.htm)  
