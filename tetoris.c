@@ -14,8 +14,8 @@
 
 char field[FIELD_H][FIELD_W] = {""};                              //フィールド用
 char displaybuf[FIELD_H][FIELD_W + STOCK_W + MINO_W + 1] = {""};  //表示用
-int fieldcolor[FIELD_H][FIELD_W] = {};                          //フィールド色用
-int color[FIELD_H][FIELD_W + STOCK_W + MINO_W + 1] = {};        //表示色用
+int fieldcolor[FIELD_H][FIELD_W] = {};                            //フィールド色用
+int color[FIELD_H][FIELD_W + STOCK_W + MINO_W + 1] = {};          //表示色用
 
 enum {            //ミノの種類
   MINO_T_I,
@@ -255,15 +255,15 @@ char minoS[MINO_T_MAX][MINO_A_MAX][MINO_H][MINO_W] = {   //ミノ
   }
 };
 
-int next[5] = {};  //この後のミノの種類
+int next[5] = {};   //この後のミノの種類
 int stock;          //ストックミノ
 int isstock = 0;    //ストック中か判定
 int canstock = 1;   //ストック可能か判定
 
-int minoX = 5, minoY = -1;  //操作対象のミノの現在地
+int minoX = 5, minoY = -0;  //操作対象のミノの現在地
 int minoT = 0, minoA = 0;  //操作対象のミノの種類と角度
 
-void change(int* x, int* y){
+void change(int* x, int* y){    //交換
   int z = *x;
   *x = *y;
   *y = z;
@@ -306,8 +306,7 @@ void display() {                         //表示用関数
 
   for (int i = 0; i < FIELD_H; i++){
     for (int j = 0; j < FIELD_W + STOCK_W + MINO_W + 1; j++){ //フィールド表示
-      printf("\x1b[3%xm", color[i][j]);
-      printf(displaybuf[i][j] ?  "■": "　");
+      printf(displaybuf[i][j] ? "\x1b[3%xm" "■": "　", color[i][j]);
     }
 
     printf("\n");
@@ -325,7 +324,7 @@ bool ishit(int _minoX, int _minoY, int _minoT, int _minoA) {  //あたり判定
 }
 
 void defomino(){  //ミノ基準値
-  minoX = 5; minoY = -1;
+  minoX = 5; minoY = -0;
   minoA = 0;
 }
 
@@ -362,7 +361,7 @@ void main (){
 
   while (1) {                      
     if(ishit(minoX, minoY, minoT, minoA)){ //終了判定
-      printf("game over\n");
+      printf("\x1b[1m" "game over! press any key!\n");
       break;
     }
 
@@ -378,7 +377,7 @@ void main (){
         case 'l' :                                                                   //右回転
         if (!ishit(minoX, minoY, minoT, (minoA + 3)%MINO_A_MAX)){minoA = (minoA + 3) % MINO_A_MAX;}; 
         break;
-        case 'h' :                                                                  //ストック
+        case 'j' :                                                                  //ストック
         if (canstock){        //ストック可能か判定
           if (isstock){       //ストック中か判定
             change(&stock, &minoT);
@@ -396,7 +395,7 @@ void main (){
       display();
     };
     if (t != time(NULL)){  //1秒経過
-      t = time(NULL);  //時間の基準点更新
+      t = time(NULL);      //時間の基準点更新
 
       if (ishit(minoX, minoY + 1, minoT, minoA)){  //ミノが地面に接触したとき
         for (int i = 0; i < MINO_H; i ++){
@@ -406,17 +405,19 @@ void main (){
           }
         };
 
-        for (int i = 0 ; i < FIELD_H - 1; i++){  
+        for (int i = 0 ; i < FIELD_H - 1; i++){  //横幅全部詰まっているか判定
           bool line = true;
           for (int j = 1;  j < FIELD_W - 1; j++){
-            if (!field[i][j])  //横幅全部詰まっているか判定
+            if (!field[i][j])  
             line = false;
           }
           if(line){
-            for(int j = i; 0 <= j; j--){
+            for(int j = i; 0 < j; j--){
               memcpy(field[j], field[j - 1], FIELD_W);  //上のマスをコピー
               memcpy(fieldcolor[j], fieldcolor[j - 1], sizeof(int) * FIELD_W);
             }
+            memset(field[0] + 1, 0, FIELD_W - 2);
+            memset(fieldcolor[0] + 1, 0, sizeof(int) * (FIELD_W - 2));
           }
         }
 
